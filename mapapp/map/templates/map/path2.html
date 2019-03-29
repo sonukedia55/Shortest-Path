@@ -1,0 +1,100 @@
+
+<script src="https://maps.googleapis.com/maps/api/js?key=API-KEY"></script>
+
+<script type="text/javascript">
+
+
+var markers = [
+
+{% for item1,item2 in myl %}
+
+    {
+        "lat": '{{item1}}',
+        "lng": '{{item2}}'
+    },
+
+{% endfor %}
+
+];
+window.onload = function () {
+    var mapOptions = {
+        center: new google.maps.LatLng(markers[0].lat, markers[0].lng),
+        zoom: 10,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    var map = new google.maps.Map(document.getElementById("dvMap"), mapOptions);
+    var infoWindow = new google.maps.InfoWindow();
+    var lat_lng = new Array();
+    var latlngbounds = new google.maps.LatLngBounds(); //criar um rectagulo com o tamanho maximo com todos pontos
+    for (var i = 0; i < markers.length; i++) {
+        var data = markers[i];
+        var myLatlng = new google.maps.LatLng(data.lat, data.lng);
+        lat_lng.push(myLatlng);
+        var marker = new google.maps.Marker({
+            position: myLatlng,
+            map: map,
+            title: data.title
+        });
+        latlngbounds.extend(marker.position); //extender os limites do rectagulo para os pontos
+        (function (marker, data) {
+            google.maps.event.addListener(marker, "click", function (e) {
+                infoWindow.setContent(data.description);
+                infoWindow.open(map, marker);
+            });
+        })(marker, data);
+    }
+    map.setCenter(latlngbounds.getCenter());
+    map.fitBounds(latlngbounds); //definir limites
+
+    //***********ROUTING****************//
+
+    //Initialize the Path Array
+    var path = new google.maps.MVCArray();
+
+    //Initialize the Direction Service
+    var service = new google.maps.DirectionsService(); //Serviço para computar direccoes entre 2 sitios
+
+    //Set the Path Stroke Color
+    var poly = new google.maps.Polyline({ map: map, strokeColor: '#cb4335' });
+
+    //Loop and Draw Path Route between the Points on MAP
+    for (var i = 0; i < lat_lng.length; i++) {
+        //if ((i) < lat_lng.length) {
+            var src = lat_lng[i];
+            var des = lat_lng[i + 1];
+            poly.setPath(path); //add the ways to the polyine
+            service.route({
+                origin: src,
+                destination: des,
+                travelMode: google.maps.DirectionsTravelMode.DRIVING
+            }, function (result, status) {
+                //alert(status);
+                if (status == google.maps.DirectionsStatus.OK) {
+                    len = result.routes[0].overview_path.length;
+                    //alert(len);
+                    for (var j = 0; j < len-1; j++) {
+                        path.push(result.routes[0].overview_path[j]);
+                    }
+                }else{
+                    //if i could pass the value of  "var i" was easy
+                    //path.push(src); //add points to the plyline
+
+                }
+            });
+        //}
+    }
+}
+</script>
+<div class="float:left">
+<div id="dvMap" style="width: 70%; height: 500px;float:left">
+</div>
+
+<div id="log" style="width: 25%; height: 500px;float:left;margin:20px;">
+  <h3>Logs</h3>
+  {% for ite in log %}
+
+    <li><br>{{ite}}</li>
+
+  {% endfor %}
+</div>
+</div>
